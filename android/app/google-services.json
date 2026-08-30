@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "957554861383",
+    "firebase_url": "https://sensibuddy1-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "sensibuddy1",
+    "storage_bucket": "sensibuddy1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:957554861383:android:e3cd0e367e117c83d71862",
+        "android_client_info": {
+          "package_name": "com.example.sensibuddy1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDQJoYSc4fnw6gAqtRuBUvGpxrBSY73drc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
