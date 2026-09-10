@@ -30,23 +30,19 @@ class _KidsTubeScreenState extends State<KidsTubeScreen> {
   void initState() {
     super.initState();
 
-    // ==========================================
+
     // INITIALIZE VIDEO SEARCH SERVICE
     // API KEY IS LOADED FROM .env
-    // ==========================================
 
     _videoSearchService = VideoSearchService();
 
-    // ==========================================
+
     // LOAD VIDEOS
-    // ==========================================
 
     _loadVideos();
   }
 
-  // ==========================================
   // LOAD VIDEOS
-  // ==========================================
 
   Future<void> _loadVideos() async {
     if (!mounted) return;
@@ -58,7 +54,7 @@ class _KidsTubeScreenState extends State<KidsTubeScreen> {
 
     try {
       debugPrint(
-        '🎬 SEARCHING VIDEOS FOR: ${widget.topic}',
+        ' SEARCHING VIDEOS FOR: ${widget.topic}',
       );
 
       final videos =
@@ -74,11 +70,11 @@ class _KidsTubeScreenState extends State<KidsTubeScreen> {
       });
 
       debugPrint(
-        '✅ VIDEOS FOUND: ${videos.length}',
+        ' VIDEOS FOUND: ${videos.length}',
       );
     } catch (e) {
       debugPrint(
-        '❌ VIDEO SEARCH ERROR: $e',
+        ' VIDEO SEARCH ERROR: $e',
       );
 
       if (!mounted) return;
@@ -90,9 +86,9 @@ class _KidsTubeScreenState extends State<KidsTubeScreen> {
     }
   }
 
-  // ==========================================
+
   // OPEN VIDEO
-  // ==========================================
+
 
   Future<void> _openVideo(
       Map<String, String> video,
@@ -101,7 +97,7 @@ class _KidsTubeScreenState extends State<KidsTubeScreen> {
 
     if (videoId == null || videoId.isEmpty) {
       debugPrint(
-        '❌ VIDEO ID NOT FOUND',
+        ' VIDEO ID NOT FOUND',
       );
 
       return;
@@ -139,9 +135,7 @@ class _KidsTubeScreenState extends State<KidsTubeScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // ==========================================
             // TOPIC HEADER
-            // ==========================================
 
             Container(
               width: double.infinity,
@@ -178,9 +172,7 @@ class _KidsTubeScreenState extends State<KidsTubeScreen> {
 
             const Divider(),
 
-            // ==========================================
             // LOADING
-            // ==========================================
 
             if (_isLoading)
               const Expanded(
@@ -189,9 +181,9 @@ class _KidsTubeScreenState extends State<KidsTubeScreen> {
                 ),
               )
 
-            // ==========================================
+
             // ERROR
-            // ==========================================
+
 
             else if (_errorMessage != null)
               Expanded(
@@ -224,9 +216,9 @@ class _KidsTubeScreenState extends State<KidsTubeScreen> {
                 ),
               )
 
-            // ==========================================
+
             // NO VIDEOS
-            // ==========================================
+
 
             else if (_videos.isEmpty)
                 const Expanded(
@@ -237,9 +229,8 @@ class _KidsTubeScreenState extends State<KidsTubeScreen> {
                   ),
                 )
 
-              // ==========================================
+
               // VIDEO LIST
-              // ==========================================
 
               else
                 Expanded(
@@ -271,9 +262,8 @@ class _KidsTubeScreenState extends State<KidsTubeScreen> {
                             CrossAxisAlignment.start,
 
                             children: [
-                              // ==========================================
                               // VIDEO THUMBNAIL
-                              // ==========================================
+
 
                               if (thumbnail.isNotEmpty)
                                 AspectRatio(
@@ -309,9 +299,8 @@ class _KidsTubeScreenState extends State<KidsTubeScreen> {
                                   ),
                                 ),
 
-                              // ==========================================
                               // VIDEO INFORMATION
-                              // ==========================================
+
 
                               Padding(
                                 padding:

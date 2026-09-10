@@ -18,18 +18,13 @@ class LiveFaceRegistrationScreen extends StatefulWidget {
 
 class _LiveFaceRegistrationScreenState
     extends State<LiveFaceRegistrationScreen> {
-
-
   CameraController? _cameraController;
 
   late FaceDetector _faceDetector;
 
   bool _isCameraInitialized = false;
-
   bool _isProcessing = false;
-
   bool _isCapturing = false;
-
   bool _isDisposed = false;
 
   bool _faceDetected = false;
@@ -38,15 +33,22 @@ class _LiveFaceRegistrationScreenState
 
   List<double>? _currentEmbedding;
 
-
   DateTime? _lastEmbeddingTime;
 
   static const Duration _embeddingInterval =
   Duration(milliseconds: 800);
 
+  // CAPTURED PHOTO PREVIEW
+
+  File? _capturedPhoto;
+
+  List<double>? _capturedEmbedding;
+
+  bool get _isPreviewingPhoto =>
+      _capturedPhoto != null &&
+          _capturedEmbedding != null;
 
   // INIT
-
   @override
   void initState() {
     super.initState();
@@ -55,8 +57,7 @@ class _LiveFaceRegistrationScreenState
     _initializeCamera();
   }
 
-
-  // INITIALIZE FACE DETECTOR
+  // FACE DETECTOR
 
   void _initializeFaceDetector() {
     _faceDetector = FaceDetector(
@@ -69,8 +70,7 @@ class _LiveFaceRegistrationScreenState
     );
   }
 
-
-  // INITIALIZE CAMERA
+  // CAMERA INITIALIZATION
 
   Future<void> _initializeCamera() async {
     try {
@@ -90,9 +90,6 @@ class _LiveFaceRegistrationScreenState
         frontCamera,
         ResolutionPreset.medium,
         enableAudio: false,
-
-
-        // Android ML Kit compatible format
         imageFormatGroup: ImageFormatGroup.nv21,
       );
 
@@ -110,13 +107,16 @@ class _LiveFaceRegistrationScreenState
         _processCameraImage,
       );
 
-      debugPrint('📷 Live camera started');
+      debugPrint(' Live camera started');
+
       debugPrint(
-        '📷 Camera format: '
+        ' Camera format: '
             '${_cameraController!.value.description.lensDirection}',
       );
     } catch (e, stackTrace) {
-      debugPrint('❌ Camera initialization error: $e');
+      debugPrint(
+        ' Camera initialization error: $e',
+      );
 
       debugPrintStack(
         stackTrace: stackTrace,
@@ -135,7 +135,7 @@ class _LiveFaceRegistrationScreenState
     }
   }
 
-  // GET CORRECT ROTATION
+  // CAMERA ROTATION
 
   InputImageRotation? _getRotation() {
     final camera = _cameraController?.description;
@@ -149,38 +149,34 @@ class _LiveFaceRegistrationScreenState
     );
   }
 
-  // PROCESS LIVE CAMERA IMAGE
+  // PROCESS CAMERA IMAGE
 
   Future<void> _processCameraImage(
       CameraImage image,
       ) async {
     if (_isProcessing ||
         _isCapturing ||
-        _isDisposed) {
+        _isDisposed ||
+        _isPreviewingPhoto) {
       return;
     }
 
     _isProcessing = true;
 
     try {
-      // DEBUG CAMERA FORMAT
-
       debugPrint(
-        '📷 Image format: '
-            '${image.format.group}',
+        ' Image format: ${image.format.group}',
       );
-
-
-      // GET ROTATION
 
       final rotation = _getRotation();
 
       if (rotation == null) {
-        debugPrint('❌ Camera rotation not supported');
+        debugPrint(
+          ' Camera rotation not supported',
+        );
+
         return;
       }
-
-      // CONVERT CAMERA IMAGE → INPUT IMAGE
 
       final inputImage = _inputImageFromCameraImage(
         image,
@@ -190,8 +186,6 @@ class _LiveFaceRegistrationScreenState
       if (inputImage == null) {
         return;
       }
-
-      // DETECT FACE
 
       final faces = await _faceDetector.processImage(
         inputImage,
@@ -213,7 +207,7 @@ class _LiveFaceRegistrationScreenState
         return;
       }
 
-      // USE FIRST FACE
+      // FIRST FACE
 
       final face = faces.first;
 
@@ -239,7 +233,7 @@ class _LiveFaceRegistrationScreenState
 
       _lastEmbeddingTime = now;
 
-      // GENERATE LIVE EMBEDDING
+      // GENERATE EMBEDDING
 
       final embedding =
       await faceEmbeddingService
@@ -251,7 +245,8 @@ class _LiveFaceRegistrationScreenState
 
       if (!mounted ||
           _isDisposed ||
-          _isCapturing) {
+          _isCapturing ||
+          _isPreviewingPhoto) {
         return;
       }
 
@@ -264,18 +259,18 @@ class _LiveFaceRegistrationScreenState
         });
 
         debugPrint(
-          '🧠 Live embedding ready: '
+          ' Live embedding ready: '
               '${embedding.length}',
         );
       } else {
         debugPrint(
-          '⚠️ Invalid embedding length: '
+          ' Invalid embedding length: '
               '${embedding.length}',
         );
       }
     } catch (e, stackTrace) {
       debugPrint(
-        '❌ Live face processing error: $e',
+        ' Live face processing error: $e',
       );
 
       debugPrintStack(
@@ -293,17 +288,17 @@ class _LiveFaceRegistrationScreenState
       InputImageRotation rotation,
       ) {
     if (image.planes.isEmpty) {
-      debugPrint('❌ Camera image has no planes');
+      debugPrint(
+        ' Camera image has no planes',
+      );
 
       return null;
     }
 
-    // ONLY SUPPORT NV21
-
     if (image.format.group !=
         ImageFormatGroup.nv21) {
       debugPrint(
-        '❌ Unsupported camera image format: '
+        ' Unsupported camera image format: '
             '${image.format.group}',
       );
 
@@ -326,13 +321,15 @@ class _LiveFaceRegistrationScreenState
     );
   }
 
-  // CAPTURE FACE
+  // CAPTURE PHOTO
+
   Future<void> _captureFace() async {
-    if (_isCapturing) {
+    if (_isCapturing ||
+        _isPreviewingPhoto) {
       return;
     }
 
-    // CHECK FACE
+    // FACE CHECK
 
     if (!_faceDetected ||
         _currentFace == null) {
@@ -348,7 +345,8 @@ class _LiveFaceRegistrationScreenState
       return;
     }
 
-    // CHECK EMBEDDING
+    // EMBEDDING CHECK
+
     if (_currentEmbedding == null ||
         _currentEmbedding!.length != 192) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -368,17 +366,18 @@ class _LiveFaceRegistrationScreenState
         _isCapturing = true;
       });
 
-      debugPrint('📸 Capturing face sample...');
+      debugPrint(
+        ' Capturing face sample...',
+      );
 
-
-      // SAFE COPY OF LIVE EMBEDDING
+      // SAFE COPY OF EMBEDDING
 
       final embedding =
       List<double>.from(
         _currentEmbedding!,
       );
 
-      // STOP LIVE STREAM
+      // STOP STREAM
 
       if (_cameraController != null &&
           _cameraController!
@@ -388,7 +387,7 @@ class _LiveFaceRegistrationScreenState
             .stopImageStream();
       }
 
-      // CHECK CAMERA
+      // CAMERA CHECK
 
       if (_cameraController == null ||
           !_cameraController!
@@ -400,7 +399,6 @@ class _LiveFaceRegistrationScreenState
       }
 
       // TAKE PHOTO
-
 
       final XFile photo =
       await _cameraController!
@@ -419,12 +417,11 @@ class _LiveFaceRegistrationScreenState
       }
 
       debugPrint(
-        '📷 Photo captured: '
-            '${file.path}',
+        ' Photo captured: ${file.path}',
       );
 
       debugPrint(
-        '🧠 Live embedding captured: '
+        ' Embedding captured: '
             '${embedding.length}',
       );
 
@@ -433,18 +430,23 @@ class _LiveFaceRegistrationScreenState
         return;
       }
 
-      // RETURN PHOTO + SAME LIVE EMBEDDING
+      // SHOW PREVIEW
 
-      Navigator.pop(
-        context,
-        {
-          'image': file,
-          'embedding': embedding,
-        },
+      setState(() {
+        _capturedPhoto = file;
+
+        _capturedEmbedding =
+        List<double>.from(embedding);
+
+        _isCapturing = false;
+      });
+
+      debugPrint(
+        ' Showing captured photo preview',
       );
     } catch (e, stackTrace) {
       debugPrint(
-        '❌ Capture error: $e',
+        ' Capture error: $e',
       );
 
       debugPrintStack(
@@ -465,25 +467,7 @@ class _LiveFaceRegistrationScreenState
 
       // RESTART STREAM
 
-      if (_cameraController != null &&
-          _cameraController!
-              .value
-              .isInitialized &&
-          !_cameraController!
-              .value
-              .isStreamingImages) {
-        try {
-          await _cameraController!
-              .startImageStream(
-            _processCameraImage,
-          );
-        } catch (restartError) {
-          debugPrint(
-            '❌ Failed to restart stream: '
-                '$restartError',
-          );
-        }
-      }
+      await _restartCameraStream();
 
       if (mounted &&
           !_isDisposed) {
@@ -492,6 +476,137 @@ class _LiveFaceRegistrationScreenState
         });
       }
     }
+  }
+
+  // RETAKE PHOTO
+
+  Future<void> _retakePhoto() async {
+    if (_isCapturing ||
+        _isDisposed) {
+      return;
+    }
+
+    debugPrint(
+      ' Retaking face photo...',
+    );
+
+    // DELETE OLD TEMP PHOTO
+
+    final oldPhoto =
+        _capturedPhoto;
+
+    if (oldPhoto != null) {
+      try {
+        if (await oldPhoto.exists()) {
+          await oldPhoto.delete();
+
+          debugPrint(
+            ' Old temporary photo deleted',
+          );
+        }
+      } catch (e) {
+        debugPrint(
+          ' Could not delete old photo: $e',
+        );
+      }
+    }
+
+    // CLEAR PREVIEW
+    if (mounted &&
+        !_isDisposed) {
+      setState(() {
+        _capturedPhoto = null;
+        _capturedEmbedding = null;
+
+        _currentFace = null;
+        _currentEmbedding = null;
+
+        _faceDetected = false;
+
+        _lastEmbeddingTime = null;
+      });
+    }
+
+    // START CAMERA STREAM AGAIN
+
+    await _restartCameraStream();
+  }
+
+  // RESTART CAMERA STREAM
+
+  Future<void> _restartCameraStream() async {
+    if (_cameraController == null ||
+        _isDisposed) {
+      return;
+    }
+
+    try {
+      if (!_cameraController!
+          .value
+          .isInitialized) {
+        return;
+      }
+
+      if (!_cameraController!
+          .value
+          .isStreamingImages) {
+        await _cameraController!
+            .startImageStream(
+          _processCameraImage,
+        );
+
+        debugPrint(
+          ' Camera stream restarted',
+        );
+      }
+    } catch (e) {
+      debugPrint(
+        ' Failed to restart camera stream: $e',
+      );
+
+      if (mounted &&
+          !_isDisposed) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.red,
+            content: Text(
+              'Could not restart camera: $e',
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  // USE THIS PHOTO
+
+  void _useThisPhoto() {
+    if (_isCapturing ||
+        _capturedPhoto == null ||
+        _capturedEmbedding == null ||
+        _capturedEmbedding!.length != 192) {
+      return;
+    }
+
+    debugPrint(
+      ' Using captured face photo',
+    );
+
+    final File photo =
+    _capturedPhoto!;
+
+    final List<double> embedding =
+    List<double>.from(
+      _capturedEmbedding!,
+    );
+
+    Navigator.pop(
+      context,
+      {
+        'image': photo,
+        'embedding': embedding,
+      },
+    );
   }
 
   // DISPOSE
@@ -518,7 +633,7 @@ class _LiveFaceRegistrationScreenState
     super.dispose();
   }
 
-  // UI
+  // BUILD
 
   @override
   Widget build(
@@ -529,7 +644,8 @@ class _LiveFaceRegistrationScreenState
             _faceDetected &&
             _currentEmbedding != null &&
             _currentEmbedding!.length == 192 &&
-            !_isCapturing;
+            !_isCapturing &&
+            !_isPreviewingPhoto;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -543,10 +659,13 @@ class _LiveFaceRegistrationScreenState
               child: Row(
                 children: [
                   IconButton(
-                    onPressed: _isCapturing
+                    onPressed:
+                    _isCapturing
                         ? null
                         : () {
-                      Navigator.pop(context);
+                      Navigator.pop(
+                        context,
+                      );
                     },
                     icon: const Icon(
                       Icons.arrow_back,
@@ -554,12 +673,15 @@ class _LiveFaceRegistrationScreenState
                     ),
                   ),
 
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Live Face Registration',
+                      _isPreviewingPhoto
+                          ? 'Review Face Photo'
+                          : 'Live Face Registration',
                       textAlign:
                       TextAlign.center,
-                      style: TextStyle(
+                      style:
+                      const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
                         fontWeight:
@@ -575,123 +697,345 @@ class _LiveFaceRegistrationScreenState
               ),
             ),
 
-            // CAMERA PREVIEW
+            // MAIN AREA
 
             Expanded(
-              child: _isCameraInitialized &&
-                  _cameraController !=
-                      null
-                  ? CameraPreview(
-                _cameraController!,
-              )
-                  : const Center(
-                child:
-                CircularProgressIndicator(
-                  color: Colors.white,
-                ),
-              ),
+              child: _isPreviewingPhoto
+                  ? _buildPhotoPreview()
+                  : _buildCameraPreview(),
             ),
 
-            // FACE STATUS
+            // BOTTOM AREA
 
-            Container(
+            _isPreviewingPhoto
+                ? _buildPreviewControls()
+                : _buildCameraControls(
+              readyToCapture,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // CAMERA PREVIEW
+
+  Widget _buildCameraPreview() {
+    return _isCameraInitialized &&
+        _cameraController != null
+        ? CameraPreview(
+      _cameraController!,
+    )
+        : const Center(
+      child:
+      CircularProgressIndicator(
+        color: Colors.white,
+      ),
+    );
+  }
+
+  // PHOTO PREVIEW
+
+  Widget _buildPhotoPreview() {
+    final photo =
+        _capturedPhoto;
+
+    if (photo == null) {
+      return const Center(
+        child: Text(
+          'No photo available',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      color: Colors.black,
+      padding:
+      const EdgeInsets.symmetric(
+        horizontal: 20,
+        vertical: 10,
+      ),
+      child: Column(
+        children: [
+          const SizedBox(
+            height: 10,
+          ),
+
+          const Text(
+            'Is this photo clear?',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 21,
+              fontWeight:
+              FontWeight.bold,
+            ),
+          ),
+
+          const SizedBox(
+            height: 8,
+          ),
+
+          const Text(
+            'Make sure your face is clearly visible.',
+            textAlign:
+            TextAlign.center,
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+            ),
+          ),
+
+          const SizedBox(
+            height: 18,
+          ),
+
+          Expanded(
+            child: Container(
               width: double.infinity,
-              padding:
-              const EdgeInsets.all(16),
-              color: readyToCapture
-                  ? Colors.green
-                  : _faceDetected
-                  ? Colors.orange
-                  : Colors.red,
-              child: Text(
-                !_isCameraInitialized
-                    ? 'Starting camera...'
-                    : !_faceDetected
-                    ? 'Looking for face...'
-                    : _currentEmbedding == null
-                    ? 'Face detected • Scanning...'
-                    : _currentEmbedding!
-                    .length !=
-                    192
-                    ? 'Face detected • Preparing...'
-                    : 'Face detected • Ready to capture',
-                textAlign:
-                TextAlign.center,
-                style:
-                const TextStyle(
+              decoration:
+              BoxDecoration(
+                borderRadius:
+                BorderRadius.circular(
+                  20,
+                ),
+                border: Border.all(
                   color: Colors.white,
-                  fontSize: 16,
+                  width: 2,
+                ),
+              ),
+              clipBehavior:
+              Clip.antiAlias,
+              child: Image.file(
+                photo,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+
+          const SizedBox(
+            height: 15,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // CAMERA CONTROLS
+
+  Widget _buildCameraControls(
+      bool readyToCapture,
+      ) {
+    return Column(
+      children: [
+        // FACE STATUS
+
+        Container(
+          width: double.infinity,
+          padding:
+          const EdgeInsets.all(16),
+          color: readyToCapture
+              ? Colors.green
+              : _faceDetected
+              ? Colors.orange
+              : Colors.red,
+          child: Text(
+            !_isCameraInitialized
+                ? 'Starting camera...'
+                : !_faceDetected
+                ? 'Looking for face...'
+                : _currentEmbedding ==
+                null
+                ? 'Face detected • Scanning...'
+                : _currentEmbedding!
+                .length !=
+                192
+                ? 'Face detected • Preparing...'
+                : 'Face detected • Ready to capture',
+            textAlign:
+            TextAlign.center,
+            style:
+            const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight:
+              FontWeight.bold,
+            ),
+          ),
+        ),
+
+        // CAPTURE BUTTON
+
+        Padding(
+          padding:
+          const EdgeInsets.all(25),
+          child: GestureDetector(
+            onTap: readyToCapture
+                ? _captureFace
+                : null,
+            child: AnimatedContainer(
+              duration:
+              const Duration(
+                milliseconds: 200,
+              ),
+              width: 80,
+              height: 80,
+              decoration:
+              BoxDecoration(
+                color: readyToCapture
+                    ? Colors.deepPurple
+                    : Colors.grey,
+                shape:
+                BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white,
+                  width: 4,
+                ),
+              ),
+              child: _isCapturing
+                  ? const Padding(
+                padding:
+                EdgeInsets.all(22),
+                child:
+                CircularProgressIndicator(
+                  color:
+                  Colors.white,
+                  strokeWidth: 3,
+                ),
+              )
+                  : const Icon(
+                Icons.camera_alt,
+                color:
+                Colors.white,
+                size: 35,
+              ),
+            ),
+          ),
+        ),
+
+        const Padding(
+          padding:
+          EdgeInsets.only(
+            bottom: 20,
+          ),
+          child: Text(
+            'Keep your face clearly visible before capturing',
+            textAlign:
+            TextAlign.center,
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // PREVIEW CONTROLS
+
+  Widget _buildPreviewControls() {
+    return Container(
+      width: double.infinity,
+      padding:
+      const EdgeInsets.fromLTRB(
+        20,
+        10,
+        20,
+        20,
+      ),
+      color: Colors.black,
+      child: Column(
+        children: [
+          // RETAKE
+
+          SizedBox(
+            width: double.infinity,
+            height: 54,
+            child: OutlinedButton.icon(
+              onPressed:
+              _isCapturing
+                  ? null
+                  : _retakePhoto,
+              icon: const Icon(
+                Icons.refresh,
+              ),
+              label: const Text(
+                'Retake Photo',
+                style:
+                TextStyle(
+                  fontSize: 17,
                   fontWeight:
                   FontWeight.bold,
                 ),
               ),
-            ),
-
-            // CAPTURE BUTTON
-
-            Padding(
-              padding:
-              const EdgeInsets.all(25),
-              child: GestureDetector(
-                onTap: readyToCapture
-                    ? _captureFace
-                    : null,
-                child: AnimatedContainer(
-                  duration:
-                  const Duration(
-                    milliseconds: 200,
-                  ),
-                  width: 80,
-                  height: 80,
-                  decoration:
-                  BoxDecoration(
-                    color: readyToCapture
-                        ? Colors.deepPurple
-                        : Colors.grey,
-                    shape:
-                    BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white,
-                      width: 4,
-                    ),
-                  ),
-                  child: _isCapturing
-                      ? const Padding(
-                    padding:
-                    EdgeInsets.all(22),
-                    child:
-                    CircularProgressIndicator(
-                      color:
-                      Colors.white,
-                      strokeWidth: 3,
-                    ),
-                  )
-                      : const Icon(
-                    Icons.camera_alt,
-                    color: Colors.white,
-                    size: 35,
+              style:
+              OutlinedButton.styleFrom(
+                foregroundColor:
+                Colors.white,
+                side:
+                const BorderSide(
+                  color: Colors.white,
+                  width: 1.5,
+                ),
+                shape:
+                RoundedRectangleBorder(
+                  borderRadius:
+                  BorderRadius.circular(
+                    14,
                   ),
                 ),
               ),
             ),
+          ),
 
-            const Padding(
-              padding:
-              EdgeInsets.only(
-                bottom: 20,
+          const SizedBox(
+            height: 12,
+          ),
+
+          // USE PHOTO
+
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton.icon(
+              onPressed:
+              _isCapturing
+                  ? null
+                  : _useThisPhoto,
+              icon: const Icon(
+                Icons.check_circle,
               ),
-              child: Text(
-                'Keep your face clearly visible before capturing',
-                textAlign:
-                TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 13,
+              label: const Text(
+                'Use This Photo',
+                style:
+                TextStyle(
+                  fontSize: 18,
+                  fontWeight:
+                  FontWeight.bold,
+                ),
+              ),
+              style:
+              ElevatedButton.styleFrom(
+                backgroundColor:
+                Colors.deepPurple,
+                foregroundColor:
+                Colors.white,
+                shape:
+                RoundedRectangleBorder(
+                  borderRadius:
+                  BorderRadius.circular(
+                    14,
+                  ),
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

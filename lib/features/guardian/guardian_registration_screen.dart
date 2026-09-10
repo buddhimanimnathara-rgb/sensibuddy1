@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../core/services/firestore_service.dart';
@@ -114,7 +115,6 @@ class _GuardianRegistrationScreenState
   }
 
   Future<void> registerGuardian() async {
-
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -123,116 +123,215 @@ class _GuardianRegistrationScreenState
       loading = true;
     });
 
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
+
     try {
+      // TRY TO CREATE NEW FIREBASE AUTH ACCOUNT
 
-      /// Check Email
+      try {
+        await authService.register(
+          email: email,
+          password: password,
+        );
 
-      final emailExists =
-      await firestoreService.checkEmailExists(
-        emailController.text.trim(),
-      );
+        // New account
+        // Send verification email
+        await authService.sendVerificationEmail();
 
-      if (emailExists) {
+        if (!mounted) return;
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => EmailVerificationScreen(
+              childId: widget.childId,
+              guardianName: nameController.text.trim(),
+              email: email,
+              phone: phoneController.text.trim(),
+              relationship: relationship,
+            ),
+          ),
+        );
+
+        return;
+      }
+
+      // EMAIL ALREADY EXISTS IN FIREBASE AUTH
+
+      on FirebaseAuthException catch (e) {
+        if (e.code != 'email-already-in-use') {
+          rethrow;
+        }
+
+
+        // TRY TO LOGIN TO EXISTING ACCOUNT
+
+        UserCredential existingUser;
+
+        try {
+          existingUser = await authService.login(
+            email: email,
+            password: password,
+          );
+        } on FirebaseAuthException catch (loginError) {
+          if (!mounted) return;
+
+          String message;
+
+          if (loginError.code == 'wrong-password' ||
+              loginError.code == 'invalid-credential') {
+            message =
+            "This email is already registered. Please enter the correct password.";
+          } else if (loginError.code == 'user-disabled') {
+            message =
+            "This account has been disabled.";
+          } else {
+            message =
+            "This email is already registered. Please sign in instead.";
+          }
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: Colors.red,
+              content: Text(message),
+            ),
+          );
+
+          return;
+        }
+
+        // MAKE SURE USER EXISTS
+
+        if (existingUser.user == null) {
+          throw Exception(
+            "Unable to access the existing account.",
+          );
+        }
+
+        // RELOAD FIREBASE USER
+
+        await authService.reloadUser();
+
+        // CHECK EMAIL VERIFICATION
+
+        final verified =
+        authService.isEmailVerified();
+
+        // ALREADY VERIFIED
+
+        if (verified) {
+          if (!mounted) return;
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              backgroundColor: Colors.red,
+              content: Text(
+                "This email is already registered and verified. Please use another email.",
+              ),
+            ),
+          );
+
+          // Don't continue registration
+          return;
+        }
+
+        // NOT VERIFIED
+
+        await authService.sendVerificationEmail();
 
         if (!mounted) return;
 
         ScaffoldMessenger.of(context).showSnackBar(
-
           const SnackBar(
-
-            backgroundColor: Colors.red,
-
+            backgroundColor: Colors.orange,
             content: Text(
-              "Email already registered.",
+              "This email is registered but not verified. A new verification email has been sent.",
             ),
-
           ),
-
         );
 
-        setState(() {
-          loading = false;
-        });
+        // GO TO VERIFICATION SCREEN
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => EmailVerificationScreen(
+              childId: widget.childId,
+              guardianName: nameController.text.trim(),
+              email: email,
+              phone: phoneController.text.trim(),
+              relationship: relationship,
+            ),
+          ),
+        );
 
         return;
-
       }
-
-      /// Create Firebase Account
-
-      await authService.register(
-
-        email: emailController.text.trim(),
-
-        password: passwordController.text.trim(),
-
-      );
-
-      /// Send Verification Email
-
-      await authService.sendVerificationEmail();
-
-      if (!mounted) return;
-
-      Navigator.push(
-
-        context,
-
-        MaterialPageRoute(
-
-          builder: (_) => EmailVerificationScreen(
-
-            childId: widget.childId,
-
-            guardianName:
-            nameController.text.trim(),
-
-            email:
-            emailController.text.trim(),
-
-            phone:
-            phoneController.text.trim(),
-
-            relationship:
-            relationship,
-
-          ),
-
-        ),
-
-      );
-
     }
 
-    catch (e) {
+    // FIREBASE AUTH ERROR
 
+    on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+
+      String message;
+
+      switch (e.code) {
+        case 'weak-password':
+          message = "The password is too weak.";
+          break;
+
+        case 'invalid-email':
+          message = "Please enter a valid email address.";
+          break;
+
+        case 'network-request-failed':
+          message =
+          "Please check your internet connection.";
+          break;
+
+        default:
+          message =
+              e.message ?? "Registration failed.";
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          content: Text(message),
+        ),
+      );
+    }
+
+
+    // OTHER ERROR
+
+    catch (e) {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-
         SnackBar(
-
           backgroundColor: Colors.red,
-
           content: Text(
             e.toString(),
           ),
-
         ),
-
       );
-
     }
 
-    if (mounted) {
+    // STOP LOADING
 
-      setState(() {
-        loading = false;
-      });
-
+    finally {
+      if (mounted) {
+        setState(() {
+          loading = false;
+        });
+      }
     }
-
   }
+
+
 
   Future<void> saveGuardian() async {
     if(!_formKey.currentState!.validate()) return;

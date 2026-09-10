@@ -123,6 +123,28 @@ Future<GuardianModel?> getGuardian(String guardianId,) async {
 
   }
 
+  Future<GuardianModel?> getGuardianByChildId(
+      String childId,
+      ) async {
+    final snapshot = await _db
+        .collection("guardians")
+        .where(
+      "childId",
+      isEqualTo: childId,
+    )
+        .limit(1)
+        .get();
+
+    if (snapshot.docs.isEmpty) {
+      return null;
+    }
+
+    return GuardianModel.fromMap(
+      snapshot.docs.first.id,
+      snapshot.docs.first.data(),
+    );
+  }
+
   Future<void> updateParentPin({
     required String guardianId,
     required String newPin,

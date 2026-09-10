@@ -1487,9 +1487,7 @@ class _AICharacterScreenState
       return 'Guardian';
     }
 
-    // ==========================================================
     // UNKNOWN PERSON
-    // ==========================================================
 
     if (_isSinhala) {
       return 'හඳුනා නොගත් පුද්ගලයා';
@@ -2084,228 +2082,15 @@ class _AICharacterScreenState
   }
 
   Future<bool> _showParentPinDialog() async {
-    final pinController = TextEditingController();
-
     final result = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) {
-        bool isLoading = false;
-        String? errorMessage;
-
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text(
-                'Parent Permission Required',
-              ),
-
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Enter the 4-digit Parent PIN '
-                        'to allow this content.',
-                  ),
-
-                  const SizedBox(
-                    height: 20,
-                  ),
-
-                  TextField(
-                    controller: pinController,
-                    keyboardType: TextInputType.number,
-                    obscureText: true,
-                    maxLength: 4,
-                    autofocus: true,
-
-                    decoration: InputDecoration(
-                      labelText: 'Parent PIN',
-                      errorText: errorMessage,
-                      border: const OutlineInputBorder(),
-                    ),
-
-                    onChanged: (value) {
-                      if (errorMessage != null) {
-                        setDialogState(() {
-                          errorMessage = null;
-                        });
-                      }
-                    },
-                  ),
-                ],
-              ),
-
-              actions: [
-
-                // CANCEL
-
-
-                TextButton(
-                  onPressed: isLoading
-                      ? null
-                      : () {
-                    Navigator.of(dialogContext).pop(
-                      false,
-                    );
-                  },
-
-                  child: const Text(
-                    'Cancel',
-                  ),
-                ),
-
-
-                // VERIFY PIN
-
-
-                ElevatedButton(
-                  onPressed: isLoading
-                      ? null
-                      : () async {
-                    final pin =
-                    pinController.text.trim();
-
-
-                    // VALIDATE PIN
-
-                    if (pin.length != 4 ||
-                        int.tryParse(pin) == null) {
-                      setDialogState(() {
-                        errorMessage =
-                        'Enter a valid 4-digit PIN.';
-                      });
-
-                      return;
-                    }
-
-                    setDialogState(() {
-                      isLoading = true;
-                      errorMessage = null;
-                    });
-
-                    try {
-                      // GET AI CONVERSATION CONTEXT
-
-                      final aiContext =
-                          _conversationContext;
-
-                      if (aiContext == null) {
-                        setDialogState(() {
-                          errorMessage =
-                          'Guardian information not found.';
-                          isLoading = false;
-                        });
-
-                        return;
-                      }
-
-
-                      // GET GUARDIAN
-
-
-                      final guardian =
-                          aiContext.guardian;
-
-                      if (guardian == null) {
-                        setDialogState(() {
-                          errorMessage =
-                          'Guardian information not found.';
-                          isLoading = false;
-                        });
-
-                        return;
-                      }
-
-                      // GET SAVED PARENT PIN
-
-                      final doc =
-                      await firestoreService
-                          .getParentPin(
-                        guardian.id,
-                      );
-
-                      if (doc == null) {
-                        setDialogState(() {
-                          errorMessage =
-                          'Parent PIN not found.';
-                          isLoading = false;
-                        });
-
-                        return;
-                      }
-
-                      // VERIFY PIN
-
-                      final savedPin =
-                      doc['pin']?.toString();
-
-                      if (savedPin == null ||
-                          savedPin.isEmpty) {
-                        setDialogState(() {
-                          errorMessage =
-                          'Parent PIN not found.';
-                          isLoading = false;
-                        });
-
-                        return;
-                      }
-
-                      if (savedPin == pin) {
-                        if (dialogContext.mounted) {
-                          Navigator.of(dialogContext)
-                              .pop(true);
-                        }
-
-                        return;
-                      }
-
-                      // INCORRECT PIN
-
-                      pinController.clear();
-
-                      setDialogState(() {
-                        errorMessage =
-                        'Incorrect PIN. Try again.';
-                        isLoading = false;
-                      });
-                    } catch (e, stackTrace) {
-                      debugPrint(
-                        ' PIN VERIFICATION ERROR: $e',
-                      );
-
-                      debugPrintStack(
-                        stackTrace: stackTrace,
-                      );
-
-                      setDialogState(() {
-                        errorMessage =
-                        'PIN verification failed.';
-                        isLoading = false;
-                      });
-                    }
-                  },
-
-                  child: isLoading
-                      ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                    ),
-                  )
-                      : const Text(
-                    'Verify',
-                  ),
-                ),
-              ],
-            );
-          },
+        return _ParentPinDialog(
+          childId: widget.child.id,
         );
       },
     );
-
-    pinController.dispose();
 
     return result ?? false;
   }
@@ -2622,6 +2407,8 @@ class _AICharacterScreenState
                 topic: contentRequest.topic,
               );
 
+              return;
+
 
             } catch (e, stackTrace) {
               debugPrint(
@@ -2647,12 +2434,11 @@ class _AICharacterScreenState
                 '${contentRequest.topic}',
           );
 
-          // VIDEO FLOW
+          await _openKidsTube(
+            topic: contentRequest.topic,
+          );
 
-          // Next step:
-          // _openKidsTube(
-          //   topic: contentRequest.topic,
-          // );
+          return;
         }
       }
 
@@ -3780,6 +3566,258 @@ class _AICharacterScreenState
     }
 
     super.dispose();
+  }
+
+}
+
+class _ParentPinDialog extends StatefulWidget {
+  final String childId;
+
+  const _ParentPinDialog({
+    required this.childId,
+  });
+
+  @override
+  State<_ParentPinDialog> createState() =>
+      _ParentPinDialogState();
+}
+
+class _ParentPinDialogState
+    extends State<_ParentPinDialog> {
+  late final TextEditingController _pinController;
+
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _pinController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _pinController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _verifyPin() async {
+    final pin = _pinController.text.trim();
+
+    if (pin.length != 4 ||
+        int.tryParse(pin) == null) {
+      setState(() {
+        _errorMessage =
+        'Enter a valid 4-digit PIN.';
+      });
+
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      debugPrint(
+        'STARTING PARENT PIN VERIFICATION',
+      );
+
+      debugPrint(
+        'CHILD ID: ${widget.childId}',
+      );
+
+      final guardian =
+      await firestoreService
+          .getGuardianByChildId(
+        widget.childId,
+      );
+
+      if (!mounted) return;
+
+      if (guardian == null) {
+        debugPrint(
+          'GUARDIAN NOT FOUND FOR CHILD: '
+              '${widget.childId}',
+        );
+
+        setState(() {
+          _errorMessage =
+          'Guardian information not found.';
+          _isLoading = false;
+        });
+
+        return;
+      }
+
+      debugPrint(
+        'GUARDIAN FOUND: ${guardian.id}',
+      );
+
+      final doc =
+      await firestoreService.getParentPin(
+        guardian.id,
+      );
+
+      if (!mounted) return;
+
+      if (doc == null) {
+        debugPrint(
+          'PARENT PIN DOCUMENT NOT FOUND',
+        );
+
+        setState(() {
+          _errorMessage =
+          'Parent PIN not found.';
+          _isLoading = false;
+        });
+
+        return;
+      }
+
+      final savedPin =
+      doc['pin']?.toString();
+
+      if (savedPin == null ||
+          savedPin.isEmpty) {
+        debugPrint(
+          'SAVED PARENT PIN IS EMPTY',
+        );
+
+        setState(() {
+          _errorMessage =
+          'Parent PIN not found.';
+          _isLoading = false;
+        });
+
+        return;
+      }
+
+      debugPrint(
+        'PARENT PIN FOUND',
+      );
+
+      if (savedPin == pin) {
+        debugPrint(
+          'PARENT PIN VERIFIED SUCCESSFULLY',
+        );
+
+        if (!mounted) return;
+
+        Navigator.of(context).pop(true);
+
+        return;
+      }
+
+      debugPrint(
+        'INCORRECT PARENT PIN',
+      );
+
+      if (!mounted) return;
+
+      _pinController.clear();
+
+      setState(() {
+        _errorMessage =
+        'Incorrect PIN. Try again.';
+        _isLoading = false;
+      });
+    } catch (e, stackTrace) {
+      debugPrint(
+        'PIN VERIFICATION ERROR: $e',
+      );
+
+      debugPrintStack(
+        stackTrace: stackTrace,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _errorMessage =
+        'PIN verification failed.';
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text(
+        'Parent Permission Required',
+      ),
+
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'Enter the 4-digit Parent PIN '
+                'to allow this content.',
+          ),
+
+          const SizedBox(
+            height: 20,
+          ),
+
+          TextField(
+            controller: _pinController,
+            keyboardType: TextInputType.number,
+            obscureText: true,
+            maxLength: 4,
+            autofocus: true,
+
+            decoration: InputDecoration(
+              labelText: 'Parent PIN',
+              errorText: _errorMessage,
+              border: const OutlineInputBorder(),
+            ),
+
+            onChanged: (value) {
+              if (_errorMessage != null) {
+                setState(() {
+                  _errorMessage = null;
+                });
+              }
+            },
+          ),
+        ],
+      ),
+
+      actions: [
+        TextButton(
+          onPressed: _isLoading
+              ? null
+              : () {
+            Navigator.of(context).pop(false);
+          },
+
+          child: const Text(
+            'Cancel',
+          ),
+        ),
+
+        ElevatedButton(
+          onPressed: _isLoading
+              ? null
+              : _verifyPin,
+
+          child: _isLoading
+              ? const SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+            ),
+          )
+              : const Text(
+            'Verify',
+          ),
+        ),
+      ],
+    );
   }
 }
 

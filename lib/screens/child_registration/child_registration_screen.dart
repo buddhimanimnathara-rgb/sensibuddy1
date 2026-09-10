@@ -360,27 +360,25 @@ class _ChildRegistrationScreenState
                       ),
 
                       items: const [
-
                         DropdownMenuItem(
-                          value: "No Diagnosis Yet",
-                          child: Text("No Diagnosis Yet"),
+                          value: "Diagnosed with ASD",
+                          child: Text("Diagnosed with ASD"),
                         ),
 
                         DropdownMenuItem(
-                          value: "Autism Spectrum Disorder (ASD)",
-                          child: Text("Autism Spectrum Disorder (ASD)"),
+                          value: "Suspected / Under Assessment",
+                          child: Text("Suspected / Under Assessment"),
                         ),
 
                         DropdownMenuItem(
-                          value: "Suspected Autism",
-                          child: Text("Suspected Autism"),
+                          value: "No ASD Diagnosis",
+                          child: Text("No ASD Diagnosis"),
                         ),
 
                         DropdownMenuItem(
-                          value: "Other",
-                          child: Text("Other"),
+                          value: "Other / Not Specified",
+                          child: Text("Other / Not Specified"),
                         ),
-
                       ],
 
                       onChanged: (value) {

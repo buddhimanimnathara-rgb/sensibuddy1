@@ -788,335 +788,410 @@ class ParentDashboardScreen extends StatelessWidget {
 
               const SizedBox(height: 20),
 
-              Text(
-                'AI Analysis',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
 
-              const SizedBox(height: 12),
 
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.deepPurple.shade400,
+                            Colors.deepPurple.shade700,
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(
+                        Icons.psychology_rounded,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(
-                            Icons.psychology_alt_rounded,
-                            size: 28,
-                          ),
-                          const SizedBox(width: 10),
-                          const Text(
-                            'AI Interaction Analysis',
+                          Text(
+                            'AI Analysis',
                             style: TextStyle(
-                              fontSize: 18,
+                              fontSize: 22,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      Row(
-                        children: [
-                          const Icon(Icons.chat_bubble_outline),
-                          const SizedBox(width: 10),
+                          SizedBox(height: 2),
                           Text(
-                            'Total Conversations: $totalAIConversations',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                            'Emotional interaction overview',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey,
                             ),
                           ),
                         ],
                       ),
+                    ),
+                  ],
+                ),
+              ),
 
-                      const SizedBox(height: 12),
+              const SizedBox(height: 14),
 
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.today_rounded,
-                          ),
-
-                          const SizedBox(width: 10),
-
-                          Text(
-                            'Today: $todayConversations conversations',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.date_range_rounded,
-                          ),
-
-                          const SizedBox(width: 10),
-
-                          Text(
-                            'Last 7 days: $last7DaysConversations conversations',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.trending_up_rounded,
-                          ),
-
-                          const SizedBox(width: 10),
-
-                          Expanded(
-                            child: Text(
-                              'Last 7 days most frequent emotion: '
-                                  '$recentMostFrequentEmotion',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      const Text(
-                        'Detected Emotions',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: [
-                          _buildEmotionChip(
-                            emoji: '😊',
-                            label: 'Happy',
-                            count: happyCount,
-                          ),
-                          _buildEmotionChip(
-                            emoji: '😢',
-                            label: 'Sad',
-                            count: sadCount,
-                          ),
-                          _buildEmotionChip(
-                            emoji: '😡',
-                            label: 'Angry',
-                            count: angryCount,
-                          ),
-                          _buildEmotionChip(
-                            emoji: '😨',
-                            label: 'Fear',
-                            count: fearCount,
-                          ),
-                          _buildEmotionChip(
-                            emoji: '😲',
-                            label: 'Surprise',
-                            count: surpriseCount,
-                          ),
-                          _buildEmotionChip(
-                            emoji: '😐',
-                            label: 'Neutral',
-                            count: neutralCount,
-                          ),
-                        ],
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(26),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.white,
+                        Colors.deepPurple.shade50,
+                      ],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.deepPurple.withOpacity(0.10),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
                       ),
                     ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.deepPurple.shade100,
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Icon(
+                                Icons.auto_awesome_rounded,
+                                color: Colors.deepPurple.shade700,
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'AI Interaction Analysis',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  SizedBox(height: 3),
+                                  Text(
+                                    'Based on recorded AI interactions',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 22),
+
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _aiStatCard(
+                                icon: Icons.chat_bubble_rounded,
+                                title: 'Conversations',
+                                value: '$totalAIConversations',
+                                iconColor: Colors.deepPurple,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _aiStatCard(
+                                icon: Icons.today_rounded,
+                                title: 'Today',
+                                value: '$todayConversations',
+                                iconColor: Colors.blue,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _aiStatCard(
+                                icon: Icons.calendar_month_rounded,
+                                title: '7 Days',
+                                value: '$last7DaysConversations',
+                                iconColor: Colors.orange,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.emoji_emotions_rounded,
+                              color: Colors.deepPurple.shade700,
+                              size: 21,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Detected Emotions',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 14),
+
+                        _emotionProgressRow(
+                          emoji: '😊',
+                          label: 'Happy',
+                          count: happyCount,
+                          total: emotionLogs.length,
+                        ),
+
+                        _emotionProgressRow(
+                          emoji: '😢',
+                          label: 'Sad',
+                          count: sadCount,
+                          total: emotionLogs.length,
+                        ),
+
+                        _emotionProgressRow(
+                          emoji: '😡',
+                          label: 'Angry',
+                          count: angryCount,
+                          total: emotionLogs.length,
+                        ),
+
+                        _emotionProgressRow(
+                          emoji: '😨',
+                          label: 'Fear',
+                          count: fearCount,
+                          total: emotionLogs.length,
+                        ),
+
+                        _emotionProgressRow(
+                          emoji: '😲',
+                          label: 'Surprise',
+                          count: surpriseCount,
+                          total: emotionLogs.length,
+                        ),
+
+                        _emotionProgressRow(
+                          emoji: '😐',
+                          label: 'Neutral',
+                          count: neutralCount,
+                          total: emotionLogs.length,
+                        ),
+
+                        const SizedBox(height: 18),
+
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.deepPurple.shade50,
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(9),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.trending_up_rounded,
+                                  color: Colors.deepPurple.shade700,
+                                  size: 21,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Most Frequent Emotion',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      mostFrequentEmotion,
+                                      style: TextStyle(
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.deepPurple.shade700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 14),
+
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.shade50,
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: Colors.amber.shade100,
+                            ),
+                          ),
+                          child: Row(
+                            crossAxisAlignment:
+                            CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.shade100,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.lightbulb_rounded,
+                                  color: Colors.amber.shade800,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'AI Insight',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 5),
+                                    Text(
+                                      analysisInsight,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        height: 1.45,
+                                        color: Colors.grey.shade800,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 14),
+
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade50,
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Row(
+                            crossAxisAlignment:
+                            CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.shade100,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.history_rounded,
+                                  color: Colors.blue.shade700,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Latest AI Interaction',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 7),
+                                    Text(
+                                      'Emotion: $latestEmotion',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.blue.shade800,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 5),
+                                    Text(
+                                      latestMessage,
+                                      maxLines: 3,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        height: 1.4,
+                                        color: Colors.grey.shade800,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
 
-              const SizedBox(height: 12),
-
-
-              const Divider(),
-
-              const SizedBox(height: 12),
-
-              Row(
-                children: [
-                  const Icon(
-                    Icons.insights_rounded,
-                  ),
-
-                  const SizedBox(width: 10),
-
-                  Expanded(
-                    child: Text(
-                      'Most frequent emotion: $mostFrequentEmotion',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
               const SizedBox(height: 20),
 
-              const Divider(),
 
-              const SizedBox(height: 12),
 
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(
-                    Icons.history_rounded,
-                  ),
 
-                  const SizedBox(width: 10),
 
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Latest AI Interaction',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
 
-                        const SizedBox(height: 6),
 
-                        Text(
-                          'Emotion: $latestEmotion',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
 
-                        const SizedBox(height: 4),
-
-                        Text(
-                          latestMessage,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 20),
-
-              const Divider(),
-
-              const SizedBox(height: 12),
-
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(
-                    Icons.history_rounded,
-                  ),
-
-                  const SizedBox(width: 10),
-
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Latest AI Interaction',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-
-                        const SizedBox(height: 6),
-
-                        Text(
-                          'Emotion: $latestEmotion',
-                        ),
-
-                        const SizedBox(height: 4),
-
-                        Text(
-                          latestMessage,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 20),
-
-              const Divider(),
-
-              const SizedBox(height: 12),
-
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(
-                    Icons.lightbulb_outline_rounded,
-                  ),
-
-                  const SizedBox(width: 10),
-
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'AI Insight',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-
-                        const SizedBox(height: 6),
-
-                        Text(
-                          analysisInsight,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
 
 
 
@@ -1547,9 +1622,7 @@ class ParentDashboardScreen extends StatelessWidget {
     );
   }
 
-  // ============================================================
   // SUMMARY TILE
-  // ============================================================
 
   static Widget _summaryTile(
       IconData icon,
@@ -1585,9 +1658,9 @@ class ParentDashboardScreen extends StatelessWidget {
     );
   }
 
-  // ============================================================
+
   // ASSESSMENT ROW
-  // ============================================================
+
 
   static Widget _assessmentRow(
       String title,
@@ -1621,9 +1694,8 @@ class ParentDashboardScreen extends StatelessWidget {
     );
   }
 
-  // ============================================================
   // ACTION CARD
-  // ============================================================
+
 
   static Widget _actionCard({
     required IconData icon,
@@ -1671,34 +1743,109 @@ class ParentDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildEmotionChip({
-    required String emoji,
-    required String label,
-    required int count,
+
+  static Widget _aiStatCard({
+    required IconData icon,
+    required String title,
+    required String value,
+    required Color iconColor,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 8,
+        vertical: 14,
+        horizontal: 8,
       ),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: Colors.grey.shade200,
+        ),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      child: Column(
         children: [
+          Icon(
+            icon,
+            color: iconColor,
+            size: 23,
+          ),
+          const SizedBox(height: 7),
           Text(
-            emoji,
-            style: const TextStyle(
-              fontSize: 18,
+            value,
+            style: TextStyle(
+              fontSize: 19,
+              fontWeight: FontWeight.bold,
+              color: iconColor,
             ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(height: 3),
           Text(
-            '$label: $count',
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
+            title,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget _emotionProgressRow({
+    required String emoji,
+    required String label,
+    required int count,
+    required int total,
+  }) {
+    final double progress =
+    total == 0 ? 0 : count / total;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 34,
+            child: Text(
+              emoji,
+              style: const TextStyle(fontSize: 19),
+            ),
+          ),
+          SizedBox(
+            width: 65,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 8,
+                backgroundColor: Colors.grey.shade200,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  Colors.deepPurple.shade400,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 28,
+            child: Text(
+              '$count',
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],

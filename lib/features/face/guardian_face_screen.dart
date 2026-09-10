@@ -106,15 +106,15 @@ class _GuardianFaceScreenState
       });
 
       debugPrint(
-        '📸 Sample $currentSample saved',
+        ' Sample $currentSample saved',
       );
 
       debugPrint(
-        '🧠 Embedding ${embedding.length}D saved',
+        ' Embedding ${embedding.length}D saved',
       );
     } catch (e, stackTrace) {
       debugPrint(
-        '❌ Capture error: $e',
+        ' Capture error: $e',
       );
 
       debugPrintStack(
@@ -147,7 +147,7 @@ class _GuardianFaceScreenState
 
     if (loading) {
       debugPrint(
-        '⚠️ Save already in progress',
+        ' Save already in progress',
       );
 
       return;
@@ -194,11 +194,11 @@ class _GuardianFaceScreenState
       );
 
       debugPrint(
-        '📷 Face images: ${faceImages.length}',
+        ' Face images: ${faceImages.length}',
       );
 
       debugPrint(
-        '🧠 Face embeddings: ${faceEmbeddings.length}',
+        ' Face embeddings: ${faceEmbeddings.length}',
       );
 
       // VALIDATE ALL IMAGE FILES
@@ -222,7 +222,7 @@ class _GuardianFaceScreenState
         }
 
         debugPrint(
-          '✅ Image ${i + 1} validated: '
+          ' Image ${i + 1} validated: '
               '$imageSize bytes',
         );
       }
@@ -255,13 +255,13 @@ class _GuardianFaceScreenState
         }
 
         debugPrint(
-          '✅ Embedding ${i + 1} validated: '
+          ' Embedding ${i + 1} validated: '
               '${embedding.length}D',
         );
       }
 
       debugPrint(
-        '✅ All face data validated successfully',
+        ' All face data validated successfully',
       );
 
       // SAVE FIRST IMAGE AS REFERENCE IMAGE
@@ -279,7 +279,7 @@ class _GuardianFaceScreenState
       base64Encode(bytes);
 
       debugPrint(
-        '📦 Reference image encoded successfully',
+        ' Reference image encoded successfully',
       );
 
       // PREPARE FIRESTORE DATA
@@ -313,7 +313,7 @@ class _GuardianFaceScreenState
       };
 
       debugPrint(
-        '💾 Preparing Firestore data...',
+        ' Preparing Firestore data...',
       );
 
       // SAVE TO FIRESTORE
@@ -328,7 +328,7 @@ class _GuardianFaceScreenState
       );
 
       debugPrint(
-        '✅ GUARDIAN FACE SUCCESSFULLY SAVED',
+        ' GUARDIAN FACE SUCCESSFULLY SAVED',
       );
 
       debugPrint(

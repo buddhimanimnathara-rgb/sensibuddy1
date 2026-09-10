@@ -28,16 +28,22 @@ class EmailVerificationScreen extends StatefulWidget {
 class _EmailVerificationScreenState
     extends State<EmailVerificationScreen> {
   bool loading = false;
+  bool resendLoading = false;
+
+  // CHECK EMAIL VERIFICATION
 
   Future<void> checkVerification() async {
-    if (loading) return;
+    if (loading || resendLoading) return;
 
     setState(() {
       loading = true;
     });
 
     try {
+      // Reload Firebase user to get latest verification status
       await authService.reloadUser();
+
+      // EMAIL IS NOT VERIFIED
 
       if (!authService.isEmailVerified()) {
         if (!mounted) return;
@@ -45,8 +51,10 @@ class _EmailVerificationScreenState
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
             content: Text(
-              "Your email has not been verified yet.",
+              "Your email has not been verified yet.\n"
+                  "Please open the verification email and click the link.",
             ),
           ),
         );
@@ -54,8 +62,9 @@ class _EmailVerificationScreenState
         return;
       }
 
-      final guardianId =
-      await firestoreService.saveGuardian({
+      // EMAIL IS VERIFIED
+
+      final guardianId = await firestoreService.saveGuardian({
         "childId": widget.childId,
         "name": widget.guardianName,
         "email": widget.email,
@@ -70,6 +79,7 @@ class _EmailVerificationScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
           content: Text(
             "Email verified successfully.",
           ),
@@ -81,6 +91,8 @@ class _EmailVerificationScreenState
       );
 
       if (!mounted) return;
+
+      // GO TO GUARDIAN FACE SCREEN
 
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
@@ -110,10 +122,42 @@ class _EmailVerificationScreenState
     }
   }
 
+  // RESEND VERIFICATION EMAIL
+
   Future<void> resendEmail() async {
-    if (loading) return;
+    if (loading || resendLoading) return;
+
+    setState(() {
+      resendLoading = true;
+    });
 
     try {
+      // Make sure current Firebase user exists
+      if (authService.currentUser == null) {
+        throw Exception(
+          "Your registration session has expired. Please register again.",
+        );
+      }
+
+      // Check whether already verified
+      await authService.reloadUser();
+
+      if (authService.isEmailVerified()) {
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: Colors.green,
+            content: Text(
+              "Your email is already verified. Please continue.",
+            ),
+          ),
+        );
+
+        return;
+      }
+
+      // Send verification email again
       await authService.sendVerificationEmail();
 
       if (!mounted) return;
@@ -124,7 +168,7 @@ class _EmailVerificationScreenState
           duration: Duration(seconds: 4),
           content: Text(
             "Verification email sent again.\n"
-                "Please check your Inbox or Spam folder.",
+                "Please check your Inbox or Spam/Junk folder.",
           ),
         ),
       );
@@ -139,18 +183,25 @@ class _EmailVerificationScreenState
           ),
         ),
       );
+    } finally {
+      if (mounted) {
+        setState(() {
+          resendLoading = false;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight =
-        MediaQuery.of(context).size.height;
+    final screenHeight = MediaQuery.of(context).size.height;
 
     final isSmallScreen = screenHeight < 650;
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
+
+      // APP BAR
 
       appBar: AppBar(
         title: const Text(
@@ -160,70 +211,55 @@ class _EmailVerificationScreenState
         foregroundColor: Colors.white,
       ),
 
+
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
             return SingleChildScrollView(
-              physics:
-              const BouncingScrollPhysics(),
+              physics: const BouncingScrollPhysics(),
 
               keyboardDismissBehavior:
               ScrollViewKeyboardDismissBehavior.onDrag,
 
               padding: EdgeInsets.symmetric(
                 horizontal: 24,
-                vertical:
-                isSmallScreen ? 20 : 32,
+                vertical: isSmallScreen ? 20 : 32,
               ),
 
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  minHeight:
-                  constraints.maxHeight -
-                      (isSmallScreen
-                          ? 40
-                          : 64),
+                  minHeight: constraints.maxHeight -
+                      (isSmallScreen ? 40 : 64),
                 ),
 
                 child: IntrinsicHeight(
                   child: Column(
-                    mainAxisAlignment:
-                    MainAxisAlignment.center,
-
+                    mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment:
                     CrossAxisAlignment.stretch,
 
                     children: [
+                      // EMAIL ICON
 
                       Center(
                         child: Icon(
                           Icons.mark_email_read,
-                          size:
-                          isSmallScreen
-                              ? 75
-                              : 100,
-                          color:
-                          Colors.deepPurple,
+                          size: isSmallScreen ? 75 : 100,
+                          color: Colors.deepPurple,
                         ),
                       ),
 
                       SizedBox(
-                        height:
-                        isSmallScreen
-                            ? 16
-                            : 25,
+                        height: isSmallScreen ? 16 : 25,
                       ),
+
 
                       const Text(
                         "Verification Email Sent",
-
-                        textAlign:
-                        TextAlign.center,
-
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 28,
-                          fontWeight:
-                          FontWeight.bold,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
 
@@ -231,63 +267,47 @@ class _EmailVerificationScreenState
                         height: 15,
                       ),
 
-                      Container(
-                        padding:
-                        const EdgeInsets.all(14),
+                      // EMAIL ADDRESS
 
-                        decoration:
-                        BoxDecoration(
-                          color:
-                          Colors.deepPurple
-                              .withValues(
+                      Container(
+                        padding: const EdgeInsets.all(14),
+
+                        decoration: BoxDecoration(
+                          color: Colors.deepPurple.withValues(
                             alpha: 0.08,
                           ),
-
                           borderRadius:
-                          BorderRadius.circular(
-                            12,
-                          ),
+                          BorderRadius.circular(12),
                         ),
 
                         child: Text(
                           widget.email,
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.visible,
 
-                          textAlign:
-                          TextAlign.center,
-
-                          overflow:
-                          TextOverflow.visible,
-
-                          style:
-                          const TextStyle(
+                          style: const TextStyle(
                             fontSize: 17,
-                            color:
-                            Colors.deepPurple,
-                            fontWeight:
-                            FontWeight.bold,
+                            color: Colors.deepPurple,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
 
                       SizedBox(
-                        height:
-                        isSmallScreen
-                            ? 18
-                            : 25,
+                        height: isSmallScreen ? 18 : 25,
                       ),
 
+                      // INSTRUCTIONS
+
                       const Text(
-                        "We have sent a verification "
-                            "link to your email.\n\n"
+                        "We have sent a verification link to your email.\n\n"
                             "1. Open your Inbox.\n"
-                            "2. If you don't see it, check "
-                            "your Spam/Junk folder.\n"
+                            "2. If you don't see it, check your Spam/Junk folder.\n"
                             "3. Click the verification link.\n"
                             "4. Return to SensiBuddy and tap "
-                            "the button below.",
+                            "\"I've Verified My Email\".",
 
-                        textAlign:
-                        TextAlign.center,
+                        textAlign: TextAlign.center,
 
                         style: TextStyle(
                           fontSize: 16,
@@ -296,35 +316,45 @@ class _EmailVerificationScreenState
                       ),
 
                       SizedBox(
-                        height:
-                        isSmallScreen
-                            ? 16
-                            : 24,
+                        height: isSmallScreen ? 16 : 24,
                       ),
+
+
+                      // RESEND BUTTON
 
                       Center(
                         child: TextButton.icon(
                           onPressed:
-                          loading
+                          loading || resendLoading
                               ? null
                               : resendEmail,
 
-                          icon: const Icon(
+                          icon: resendLoading
+                              ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child:
+                            CircularProgressIndicator(
+                              strokeWidth: 2,
+                            ),
+                          )
+                              : const Icon(
                             Icons.refresh,
                           ),
 
-                          label: const Text(
-                            "Resend Verification Email",
+                          label: Text(
+                            resendLoading
+                                ? "Sending..."
+                                : "Resend Verification Email",
                           ),
                         ),
                       ),
 
                       SizedBox(
-                        height:
-                        isSmallScreen
-                            ? 20
-                            : 35,
+                        height: isSmallScreen ? 20 : 35,
                       ),
+
+                      // I'VE VERIFIED BUTTON
 
                       SizedBox(
                         width: double.infinity,
@@ -332,7 +362,7 @@ class _EmailVerificationScreenState
 
                         child: ElevatedButton(
                           onPressed:
-                          loading
+                          loading || resendLoading
                               ? null
                               : checkVerification,
 
@@ -353,9 +383,7 @@ class _EmailVerificationScreenState
                             shape:
                             RoundedRectangleBorder(
                               borderRadius:
-                              BorderRadius.circular(
-                                14,
-                              ),
+                              BorderRadius.circular(14),
                             ),
                           ),
 
@@ -367,8 +395,7 @@ class _EmailVerificationScreenState
                             child:
                             CircularProgressIndicator(
                               strokeWidth: 3,
-                              color:
-                              Colors.white,
+                              color: Colors.white,
                             ),
                           )
                               : const Text(

@@ -23,34 +23,50 @@ class ChildFaceScreen extends StatefulWidget {
       _ChildFaceScreenState();
 }
 
-class _ChildFaceScreenState
-    extends State<ChildFaceScreen> {
-
-  // FACE IMAGES
+class _ChildFaceScreenState extends State<ChildFaceScreen> {
 
   final List<File> faceImages = [];
-
-
-  // LIVE EMBEDDINGS
   final List<List<double>> faceEmbeddings = [];
 
-
-  // STATES
-
   bool loading = false;
+  bool cameraOpening = false;
 
   int currentSample = 1;
 
-
-  // CAPTURE FACE USING LIVE FACE REGISTRATION SCREEN
-  Future<void> captureFace() async {
-    if (loading || currentSample > 3) {
+  Future<void> captureFace({int? sampleIndex}) async {
+    if (loading || cameraOpening) {
       return;
     }
 
-    try {
+    final int targetIndex =
+        sampleIndex ?? faceImages.length;
 
-      // OPEN LIVE CAMERA SCREEN
+    if (targetIndex < 0 || targetIndex >= 3) {
+      return;
+    }
+
+    setState(() {
+      cameraOpening = true;
+    });
+
+    try {
+      debugPrint(
+        '========================================',
+      );
+
+      debugPrint(
+        ' Opening child live face registration',
+      );
+
+      debugPrint(
+        'Target Sample: ${targetIndex + 1}',
+      );
+
+      debugPrint(
+        '========================================',
+      );
+      // OPEN LIVE CAMERA
+
       final result =
       await Navigator.push<Map<String, dynamic>>(
         context,
@@ -61,6 +77,7 @@ class _ChildFaceScreenState
       );
 
       // USER CANCELLED
+
       if (result == null) {
         return;
       }
@@ -72,80 +89,126 @@ class _ChildFaceScreenState
 
       if (imageValue is! File) {
         throw Exception(
-          'Captured face image is invalid',
+          'Captured face image is invalid.',
         );
       }
 
       final File image = imageValue;
 
+      // VALIDATE IMAGE FILE
+
+      final bool imageExists =
+      await image.exists();
+
+      if (!imageExists) {
+        throw Exception(
+          'Captured image file not found.',
+        );
+      }
+
+      final int imageSize =
+      await image.length();
+
+      if (imageSize <= 0) {
+        throw Exception(
+          'Captured image is empty.',
+        );
+      }
+
       // GET EMBEDDING
+
       final dynamic embeddingValue =
       result['embedding'];
 
       if (embeddingValue is! List) {
         throw Exception(
-          'Face embedding is invalid',
+          'Face embedding is invalid.',
         );
       }
 
+      // CONVERT EMBEDDING TO List<double>
+
       final List<double> embedding =
-      embeddingValue.map((item) {
+      embeddingValue.map<double>((item) {
         if (item is num) {
           return item.toDouble();
         }
 
-        return double.tryParse(
-          item.toString(),
-        ) ??
-            0.0;
+        final parsed =
+        double.tryParse(item.toString());
+
+        if (parsed == null) {
+          throw Exception(
+            'Invalid embedding value: $item',
+          );
+        }
+
+        return parsed;
       }).toList();
 
-      // VALIDATE IMAGE
-      final exists =
-      await image.exists();
+      // EMBEDDING LENGTH
 
-      if (!exists) {
-        throw Exception(
-          'Captured image file not found',
-        );
-      }
-
-      // VALIDATE EMBEDDING
       if (embedding.length != 192) {
         throw Exception(
           'Invalid face embedding length: '
-              '${embedding.length}',
+              '${embedding.length}. Expected 192.',
         );
+      }
+
+      // EMBEDDING VALUE VALIDATION
+
+      for (final value in embedding) {
+        if (!value.isFinite) {
+          throw Exception(
+            'Face embedding contains an invalid value.',
+          );
+        }
       }
 
       if (!mounted) {
         return;
       }
 
-      // ADD IMAGE + MATCHING EMBEDDING
+      // REPLACE EXISTING SAMPLE
+      // OR ADD NEW SAMPLE
 
       setState(() {
-        faceImages.add(image);
+        if (targetIndex < faceImages.length) {
+          // RETAKE / REPLACE
 
-        faceEmbeddings.add(
-          List<double>.from(
-            embedding,
-          ),
-        );
+          faceImages[targetIndex] = image;
 
-        currentSample++;
+          faceEmbeddings[targetIndex] =
+          List<double>.from(embedding);
+        } else {
+
+
+          faceImages.add(image);
+
+          faceEmbeddings.add(
+            List<double>.from(embedding),
+          );
+        }
+
+        // Next sample
+        currentSample =
+        faceImages.length < 3
+            ? faceImages.length + 1
+            : 4;
       });
+
+      // DEBUG
 
       debugPrint(
         '========================================',
       );
 
       debugPrint(
-        '📷 Child sample captured',
+        ' Child face sample ready',
       );
 
       debugPrint(
-        'Sample: ${faceImages.length}',
+        'Sample: ${targetIndex + 1}',
       );
 
       debugPrint(
@@ -164,16 +227,16 @@ class _ChildFaceScreenState
         '========================================',
       );
 
-      if (!mounted) {
-        return;
-      }
+      // SUCCESS MESSAGE
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           behavior: SnackBarBehavior.floating,
           backgroundColor: Colors.green,
           content: Text(
-            'Face Sample ${faceImages.length} captured successfully',
+            targetIndex < faceImages.length
+                ? 'Face Sample ${targetIndex + 1} updated successfully'
+                : 'Face Sample ${targetIndex + 1} captured successfully',
           ),
         ),
       );
@@ -203,22 +266,28 @@ class _ChildFaceScreenState
           ),
         ),
       );
+    } finally {
+      if (mounted) {
+        setState(() {
+          cameraOpening = false;
+        });
+      }
     }
   }
 
   // SAVE CHILD FACE
 
   Future<void> saveFace() async {
+    // CHECK EXACTLY 3 SAMPLES
 
-    // CHECK 3 FACE SAMPLES
-
-    if (faceImages.length < 3 ||
-        faceEmbeddings.length < 3) {
+    if (faceImages.length != 3 ||
+        faceEmbeddings.length != 3) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.orange,
           content: Text(
-            'Please capture 3 face samples',
+            'Please capture all 3 face samples.',
           ),
         ),
       );
@@ -226,7 +295,7 @@ class _ChildFaceScreenState
       return;
     }
 
-    // CHECK IMAGE / EMBEDDING COUNT MATCH
+    // CHECK COUNTS MATCH
 
     if (faceImages.length !=
         faceEmbeddings.length) {
@@ -235,11 +304,15 @@ class _ChildFaceScreenState
           behavior: SnackBarBehavior.floating,
           backgroundColor: Colors.red,
           content: Text(
-            'Face images and embeddings do not match',
+            'Face images and embeddings do not match.',
           ),
         ),
       );
 
+      return;
+    }
+
+    if (loading) {
       return;
     }
 
@@ -253,12 +326,36 @@ class _ChildFaceScreenState
       );
 
       debugPrint(
-        '📷 Face images: ${faceImages.length}',
+        ' Face images: ${faceImages.length}',
       );
 
       debugPrint(
-        '🧠 Face embeddings: '
-            '${faceEmbeddings.length}',
+        ' Face embeddings: ${faceEmbeddings.length}',
+      );
+
+      // VALIDATE ALL IMAGES
+      for (int i = 0; i < 3; i++) {
+        final bool exists =
+        await faceImages[i].exists();
+
+        if (!exists) {
+          throw Exception(
+            'Face image ${i + 1} was not found.',
+          );
+        }
+
+        final int size =
+        await faceImages[i].length();
+
+        if (size <= 0) {
+          throw Exception(
+            'Face image ${i + 1} is empty.',
+          );
+        }
+      }
+
+      debugPrint(
+        ' All child images validated',
       );
 
       // VALIDATE ALL EMBEDDINGS
@@ -267,85 +364,108 @@ class _ChildFaceScreenState
         if (faceEmbeddings[i].length != 192) {
           throw Exception(
             'Invalid embedding ${i + 1}: '
-                '${faceEmbeddings[i].length}',
+                '${faceEmbeddings[i].length}. '
+                'Expected 192.',
           );
+        }
+
+        for (final value in faceEmbeddings[i]) {
+          if (!value.isFinite) {
+            throw Exception(
+              'Embedding ${i + 1} contains an invalid value.',
+            );
+          }
         }
       }
 
       debugPrint(
-        '✅ All child embeddings validated',
+        ' All child embeddings validated',
       );
 
-      // SAVE FIRST IMAGE AS IMAGE DATA
+      // SAVE FIRST IMAGE AS BASE64
 
       final bytes =
       await faceImages.first.readAsBytes();
+
+      if (bytes.isEmpty) {
+        throw Exception(
+          'First face image is empty.',
+        );
+      }
 
       final imageData =
       base64Encode(bytes);
 
       debugPrint(
-        '💾 Preparing child Firestore data...',
+        ' Preparing child Firestore data...',
       );
+
+      final Map<String, dynamic> faceData = {
+        // ID
+        'childId': widget.childId,
+
+        // IMAGE
+        'imageData': imageData,
+
+        // LIVE CAMERA EMBEDDINGS
+        'embedding1':
+        List<double>.from(
+          faceEmbeddings[0],
+        ),
+
+        'embedding2':
+        List<double>.from(
+          faceEmbeddings[1],
+        ),
+
+        'embedding3':
+        List<double>.from(
+          faceEmbeddings[2],
+        ),
+
+        // REGISTRATION STATUS
+        'registered': true,
+
+        'faceCount':
+        faceImages.length,
+
+        'embeddingCount':
+        faceEmbeddings.length,
+
+        'createdAt':
+        DateTime.now()
+            .toIso8601String(),
+      };
 
       // SAVE TO FIRESTORE
 
       await firestoreService.saveChildFace(
         widget.childId,
-        {
-          // ID
-          'childId': widget.childId,
-
-          // IMAGE
-          'imageData': imageData,
-
-          // LIVE CAMERA EMBEDDINGS
-          'embedding1':
-          faceEmbeddings[0],
-
-          'embedding2':
-          faceEmbeddings[1],
-
-          'embedding3':
-          faceEmbeddings[2],
-
-          // REGISTRATION STATUS
-          'registered': true,
-
-          'faceCount':
-          faceImages.length,
-
-          'embeddingCount':
-          faceEmbeddings.length,
-
-          'createdAt':
-          DateTime.now()
-              .toIso8601String(),
-        },
+        faceData,
       );
 
       debugPrint(
-        '✅ Child face successfully saved',
+        ' Child face successfully saved',
       );
 
       if (!mounted) {
         return;
       }
 
-      // SUCCESS MESSAGE
+      // SUCCESS
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          behavior:
-          SnackBarBehavior.floating,
-          backgroundColor:
-          Colors.green,
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.green,
           content: Text(
-            'Child face registered successfully',
+            'Child face registered successfully.',
           ),
         ),
       );
 
-      // GO TO PARENT PIN SCREEN
+      // GO TO PARENT PIN
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -374,10 +494,8 @@ class _ChildFaceScreenState
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          behavior:
-          SnackBarBehavior.floating,
-          backgroundColor:
-          Colors.red,
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.red,
           content: Text(
             'Error saving child face: $e',
           ),
@@ -393,7 +511,12 @@ class _ChildFaceScreenState
   }
 
   // SKIP REGISTRATION
+
   void _skipForNow() {
+    if (loading || cameraOpening) {
+      return;
+    }
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -405,11 +528,143 @@ class _ChildFaceScreenState
     );
   }
 
+  // SAMPLE STATUS
+
+  bool _isSampleCompleted(int index) {
+    return faceImages.length > index &&
+        faceEmbeddings.length > index &&
+        faceEmbeddings[index].length == 192;
+  }
+
+  // SAMPLE CARD
+
+  Widget _buildSampleCard({
+    required int sample,
+  }) {
+    final int index = sample - 1;
+
+    final bool completed =
+    _isSampleCompleted(index);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: completed
+            ? Colors.green.shade50
+            : Colors.grey.shade50,
+        borderRadius:
+        BorderRadius.circular(18),
+        border: Border.all(
+          color: completed
+              ? Colors.green.shade200
+              : Colors.grey.shade300,
+        ),
+      ),
+      child: Row(
+        children: [
+          // THUMBNAIL
+
+          Container(
+            width: 62,
+            height: 62,
+            decoration: BoxDecoration(
+              color:
+              Colors.deepPurple.shade50,
+              borderRadius:
+              BorderRadius.circular(14),
+            ),
+            clipBehavior:
+            Clip.antiAlias,
+            child: completed
+                ? Image.file(
+              faceImages[index],
+              fit: BoxFit.cover,
+            )
+                : const Icon(
+              Icons.face,
+              size: 34,
+              color: Colors.deepPurple,
+            ),
+          ),
+
+          const SizedBox(width: 14),
+
+          // SAMPLE INFORMATION
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+              CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Face Sample $sample',
+                  style: const TextStyle(
+                    fontWeight:
+                    FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  completed
+                      ? 'Ready'
+                      : 'Not captured',
+                  style: TextStyle(
+                    color: completed
+                        ? Colors.green
+                        : Colors.grey,
+                    fontWeight:
+                    FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // RETAKE BUTTON
+
+          if (completed)
+            OutlinedButton(
+              onPressed:
+              loading ||
+                  cameraOpening
+                  ? null
+                  : () {
+                captureFace(
+                  sampleIndex:
+                  index,
+                );
+              },
+              style:
+              OutlinedButton.styleFrom(
+                foregroundColor:
+                Colors.deepPurple,
+                side:
+                const BorderSide(
+                  color: Colors.deepPurple,
+                ),
+                shape:
+                RoundedRectangleBorder(
+                  borderRadius:
+                  BorderRadius.circular(
+                    12,
+                  ),
+                ),
+              ),
+              child: const Text(
+                'Retake',
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   // BUILD
+
   @override
-  Widget build(
-      BuildContext context,
-      ) {
+  Widget build(BuildContext context) {
     final bool allSamplesCaptured =
         faceImages.length == 3 &&
             faceEmbeddings.length == 3;
@@ -417,6 +672,7 @@ class _ChildFaceScreenState
     return Scaffold(
       backgroundColor:
       const Color(0xFFF7F3FF),
+
 
       appBar: AppBar(
         title: const Text(
@@ -429,6 +685,8 @@ class _ChildFaceScreenState
         Colors.white,
         elevation: 0,
       ),
+
+
 
       body: Container(
         decoration:
@@ -447,35 +705,35 @@ class _ChildFaceScreenState
         ),
 
         child: SafeArea(
-          child:
-          SingleChildScrollView(
+          child: SingleChildScrollView(
             padding:
             const EdgeInsets.all(20),
 
             child: Column(
               children: [
 
-                // MASCOT
+
                 Image.asset(
                   'assets/images/mascot.png',
                   height: 120,
                 )
                     .animate(
-                  onPlay: (c) =>
-                      c.repeat(
+                  onPlay: (controller) =>
+                      controller.repeat(
                         reverse: true,
                       ),
                 )
                     .moveY(
                   begin: 0,
                   end: -10,
-                  duration:
-                  2.seconds,
+                  duration: 2.seconds,
                 ),
 
                 const SizedBox(
                   height: 20,
                 ),
+
+                // TITLE
 
                 const Text(
                   'Child Face Registration',
@@ -493,7 +751,7 @@ class _ChildFaceScreenState
                 ),
 
                 const Text(
-                  'Capture three clear live face samples of the child.\nYou can skip this step and register later.',
+                  'Capture three clear live face samples of the child.\nYou can retake any sample if the photo is not clear.',
                   textAlign:
                   TextAlign.center,
                   style: TextStyle(
@@ -508,9 +766,9 @@ class _ChildFaceScreenState
                 ),
 
                 // MAIN CARD
+
                 Card(
                   elevation: 8,
-
                   shape:
                   RoundedRectangleBorder(
                     borderRadius:
@@ -527,15 +785,13 @@ class _ChildFaceScreenState
 
                     child: Column(
                       children: [
+                        // MAIN IMAGE PREVIEW
 
-                        // IMAGE PREVIEW
                         CircleAvatar(
                           radius: 80,
-
                           backgroundColor:
                           Colors.deepPurple
                               .shade50,
-
                           backgroundImage:
                           faceImages.isNotEmpty
                               ? FileImage(
@@ -543,7 +799,6 @@ class _ChildFaceScreenState
                                 .first,
                           )
                               : null,
-
                           child:
                           faceImages.isEmpty
                               ? const Icon(
@@ -560,7 +815,7 @@ class _ChildFaceScreenState
                           height: 25,
                         ),
 
-                        // SAMPLE STATUS
+
                         Container(
                           padding:
                           const EdgeInsets
@@ -568,31 +823,27 @@ class _ChildFaceScreenState
                             horizontal: 14,
                             vertical: 10,
                           ),
-
                           decoration:
                           BoxDecoration(
                             color: Colors
                                 .deepPurple
                                 .shade50,
-
                             borderRadius:
                             BorderRadius
                                 .circular(
                               14,
                             ),
                           ),
-
                           child: Text(
                             currentSample <= 3
                                 ? 'Current Sample : $currentSample / 3'
                                 : 'All Samples Captured',
-
                             style:
                             const TextStyle(
                               fontWeight:
                               FontWeight.bold,
-                              color:
-                              Colors.deepPurple,
+                              color: Colors
+                                  .deepPurple,
                               fontSize: 16,
                             ),
                           ),
@@ -602,22 +853,23 @@ class _ChildFaceScreenState
                           height: 25,
                         ),
 
-                        // CAPTURE BUTTON
+
+
                         SizedBox(
                           width:
                           double.infinity,
                           height: 55,
-
                           child:
-                          ElevatedButton.icon(
+                          ElevatedButton
+                              .icon(
                             style:
                             ElevatedButton
                                 .styleFrom(
                               backgroundColor:
-                              Colors.deepPurple,
+                              Colors
+                                  .deepPurple,
                               foregroundColor:
                               Colors.white,
-
                               shape:
                               RoundedRectangleBorder(
                                 borderRadius:
@@ -627,24 +879,38 @@ class _ChildFaceScreenState
                                 ),
                               ),
                             ),
-
                             onPressed:
                             loading ||
+                                cameraOpening ||
                                 currentSample >
                                     3
                                 ? null
-                                : captureFace,
-
-                            icon:
-                            const Icon(
-                              Icons.camera_alt,
+                                : () {
+                              captureFace();
+                            },
+                            icon: cameraOpening
+                                ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child:
+                              CircularProgressIndicator(
+                                strokeWidth:
+                                3,
+                                color:
+                                Colors.white,
+                              ),
+                            )
+                                : const Icon(
+                              Icons
+                                  .camera_alt,
                             ),
-
                             label: Text(
-                              currentSample <= 3
+                              cameraOpening
+                                  ? 'Opening Camera...'
+                                  : currentSample <=
+                                  3
                                   ? 'Capture Sample $currentSample'
                                   : 'Completed',
-
                               style:
                               const TextStyle(
                                 fontSize: 17,
@@ -659,66 +925,45 @@ class _ChildFaceScreenState
                           height: 20,
                         ),
 
-                        // SAMPLE CHECKLIST
+
                         Container(
                           width:
                           double.infinity,
-
                           padding:
                           const EdgeInsets
-                              .all(15),
-
+                              .all(
+                            15,
+                          ),
                           decoration:
                           BoxDecoration(
-                            color: Colors
-                                .green
-                                .shade50,
-
+                            color:
+                            Colors.green.shade50,
                             borderRadius:
                             BorderRadius
                                 .circular(
                               18,
                             ),
                           ),
-
                           child: Column(
                             children: [
-
-                              _buildSampleStatus(
+                              _buildSampleCard(
                                 sample: 1,
-                                completed:
-                                faceImages.isNotEmpty &&
-                                    faceEmbeddings.isNotEmpty,
                               ),
 
                               const SizedBox(
                                 height: 10,
                               ),
 
-                              _buildSampleStatus(
+                              _buildSampleCard(
                                 sample: 2,
-                                completed:
-                                faceImages
-                                    .length >=
-                                    2 &&
-                                    faceEmbeddings
-                                        .length >=
-                                        2,
                               ),
 
                               const SizedBox(
                                 height: 10,
                               ),
 
-                              _buildSampleStatus(
+                              _buildSampleCard(
                                 sample: 3,
-                                completed:
-                                faceImages
-                                    .length >=
-                                    3 &&
-                                    faceEmbeddings
-                                        .length >=
-                                        3,
                               ),
                             ],
                           ),
@@ -729,25 +974,25 @@ class _ChildFaceScreenState
                         ),
 
                         // SKIP
+
                         SizedBox(
                           width:
                           double.infinity,
                           height: 55,
-
                           child:
-                          OutlinedButton.icon(
+                          OutlinedButton
+                              .icon(
                             style:
                             OutlinedButton
                                 .styleFrom(
                               foregroundColor:
-                              Colors.deepPurple,
-
+                              Colors
+                                  .deepPurple,
                               side:
                               const BorderSide(
-                                color:
-                                Colors.deepPurple,
+                                color: Colors
+                                    .deepPurple,
                               ),
-
                               shape:
                               RoundedRectangleBorder(
                                 borderRadius:
@@ -757,17 +1002,15 @@ class _ChildFaceScreenState
                                 ),
                               ),
                             ),
-
                             onPressed:
-                            loading
+                            loading ||
+                                cameraOpening
                                 ? null
                                 : _skipForNow,
-
                             icon:
                             const Icon(
                               Icons.skip_next,
                             ),
-
                             label:
                             const Text(
                               'Skip For Now',
@@ -785,21 +1028,22 @@ class _ChildFaceScreenState
                         ),
 
                         // CONTINUE
+
                         SizedBox(
                           width:
                           double.infinity,
                           height: 55,
-
                           child:
-                          ElevatedButton.icon(
+                          ElevatedButton
+                              .icon(
                             style:
                             ElevatedButton
                                 .styleFrom(
                               backgroundColor:
-                              Colors.deepPurple,
+                              Colors
+                                  .deepPurple,
                               foregroundColor:
                               Colors.white,
-
                               shape:
                               RoundedRectangleBorder(
                                 borderRadius:
@@ -809,18 +1053,16 @@ class _ChildFaceScreenState
                                 ),
                               ),
                             ),
-
                             onPressed:
                             loading ||
                                 !allSamplesCaptured
                                 ? null
                                 : saveFace,
-
                             icon:
                             const Icon(
-                              Icons.arrow_forward,
+                              Icons
+                                  .arrow_forward,
                             ),
-
                             label: loading
                                 ? const SizedBox(
                               height: 22,
@@ -862,47 +1104,6 @@ class _ChildFaceScreenState
           ),
         ),
       ),
-    );
-  }
-
-  // SAMPLE STATUS WIDGET
-  Widget _buildSampleStatus({
-    required int sample,
-    required bool completed,
-  }) {
-    return Row(
-      children: [
-
-        Icon(
-          completed
-              ? Icons.check_circle
-              : Icons.radio_button_unchecked,
-
-          color: completed
-              ? Colors.green
-              : Colors.grey,
-        ),
-
-        const SizedBox(
-          width: 10,
-        ),
-
-        Text(
-          'Face Sample $sample',
-        ),
-
-        const Spacer(),
-
-        if (completed)
-          const Text(
-            'Ready',
-            style: TextStyle(
-              color: Colors.green,
-              fontWeight:
-              FontWeight.bold,
-            ),
-          ),
-      ],
     );
   }
 }
